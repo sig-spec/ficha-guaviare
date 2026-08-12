@@ -51,11 +51,28 @@ html, body, [class*="css"] {
     font-family: 'Source Sans 3', sans-serif;
     color: var(--apc-text);
 }
-.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+:root { color-scheme: light only; }
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], body {
     background-color: #FFFFFF !important;
 }
 div[data-testid="stToolbar"], div[data-testid="stDecoration"], header[data-testid="stHeader"] {
     display: none !important;
+}
+
+/* Fuerza texto legible aunque el navegador este en modo oscuro */
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stCaptionContainer"] p,
+[data-testid="stRadio"] label span,
+[data-testid="stWidgetLabel"] p,
+[data-testid="stSelectbox"] label p,
+label p {
+    color: var(--apc-text) !important;
+}
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+    background-color: #FFFFFF !important;
+    color: var(--apc-text) !important;
+    border-color: var(--apc-border) !important;
 }
 
 .apc-header {
