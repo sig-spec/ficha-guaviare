@@ -74,6 +74,13 @@ label p {
     color: var(--apc-text) !important;
     border-color: var(--apc-border) !important;
 }
+/* Excepciones: estos textos van sobre fondo azul, deben quedar blancos */
+[data-testid="stMarkdownContainer"] p.apc-header-title {
+    color: #FFFFFF !important;
+}
+[data-testid="stMarkdownContainer"] p.apc-header-subtitle {
+    color: rgba(255,255,255,0.78) !important;
+}
 
 .apc-header {
     background: var(--apc-blue);
@@ -476,13 +483,27 @@ df = load_data()
 # ============================================================================
 # HEADER
 # ============================================================================
-st.markdown(
-    '<div class="apc-header">'
-    '<p class="apc-header-title">Ficha de Cooperacion Internacional</p>'
-    '<p class="apc-header-subtitle">Departamento del Guaviare &mdash; Mapeo de actores, primer semestre 2026</p>'
-    '</div>',
-    unsafe_allow_html=True
-)
+col_title, col_logo = st.columns([3, 1])
+with col_title:
+    st.markdown(
+        '<div style="padding: 0.6rem 0 0.2rem 0;">'
+        '<div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:1.35rem;color:#003087;line-height:1.3;">'
+        'Ficha de Cooperacion Internacional'
+        '</div>'
+        '<div style="font-size:0.85rem;color:#5A6A85;margin-top:4px;">'
+        'Departamento del Guaviare &mdash; Mapeo de actores, primer semestre 2026'
+        '</div></div>',
+        unsafe_allow_html=True
+    )
+with col_logo:
+    logo_shown = False
+    for logo_path in (LOGO_1, LOGO_2):
+        try:
+            st.image(logo_path, use_container_width=True)
+            logo_shown = True
+        except Exception:
+            pass
+
 st.markdown('<div class="apc-flag-bar"></div>', unsafe_allow_html=True)
 
 nav_options = ["\U0001F4CA Panorama Guaviare", "\U0001F4D6 Guia de usuario"]
