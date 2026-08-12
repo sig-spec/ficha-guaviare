@@ -496,13 +496,10 @@ with col_title:
         unsafe_allow_html=True
     )
 with col_logo:
-    logo_shown = False
-    for logo_path in (LOGO_1, LOGO_2):
-        try:
-            st.image(logo_path, use_container_width=True)
-            logo_shown = True
-        except Exception:
-            pass
+    try:
+        st.image(LOGO_1, width=110)
+    except Exception:
+        pass
 
 st.markdown('<div class="apc-flag-bar"></div>', unsafe_allow_html=True)
 
