@@ -37,14 +37,15 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Source+Sans+3:wght@400;600&display=swap');
 
 :root {
-    --apc-blue: #003087;
-    --apc-red: #C8102E;
-    --apc-yellow: #F5A623;
-    --apc-light: #EEF3FB;
+    --apc-blue: #0765AD;
+    --apc-green: #00A859;
+    --apc-red: #ED3237;
+    --apc-yellow: #FDBC2D;
+    --apc-light: #EAF4FB;
     --apc-gray: #F7F8FA;
-    --apc-border: #D1D9E6;
-    --apc-text: #1C2B4A;
-    --apc-muted: #5A6A85;
+    --apc-border: #D6E6F0;
+    --apc-text: #0B3B5C;
+    --apc-muted: #5A7185;
 }
 
 html, body, [class*="css"] {
@@ -119,7 +120,7 @@ li[role="option"]:hover, li[aria-selected="true"] {
 }
 .apc-flag-bar {
     height: 5px;
-    background: linear-gradient(90deg, var(--apc-yellow) 33.3%, var(--apc-blue) 33.3% 66.6%, var(--apc-red) 66.6%);
+    background: linear-gradient(90deg, var(--apc-green) 25%, var(--apc-blue) 25% 50%, var(--apc-yellow) 50% 75%, var(--apc-red) 75%);
     margin-bottom: 1.4rem;
 }
 
@@ -369,7 +370,7 @@ def exploded_ods_counts(series):
     return out
 
 
-def bar_chart(df, y_field, x_field, color="#003087"):
+def bar_chart(df, y_field, x_field, color="#0765AD"):
     return (
         alt.Chart(df)
         .mark_bar(color=color, cornerRadiusTopRight=4, cornerRadiusBottomRight=4)
@@ -439,24 +440,24 @@ def to_pdf(df, kpis):
     )
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle("TitleAPC", parent=styles["Heading1"],
-                                  textColor=colors.HexColor("#003087"), fontSize=15, spaceAfter=4)
+                                  textColor=colors.HexColor("#0765AD"), fontSize=15, spaceAfter=4)
     sub_style = ParagraphStyle("SubAPC", parent=styles["Normal"],
                                 textColor=colors.HexColor("#5A6A85"), fontSize=9, spaceAfter=10)
     section_style = ParagraphStyle("SectionAPC", parent=styles["Heading2"],
-                                    textColor=colors.HexColor("#003087"), fontSize=11,
+                                    textColor=colors.HexColor("#0765AD"), fontSize=11,
                                     spaceBefore=14, spaceAfter=6)
     cell_style = ParagraphStyle("Cell", parent=styles["Normal"], fontSize=7.5, leading=9)
 
     elements = [
         Paragraph("Ficha de Cooperacion Internacional - Guaviare", title_style),
         Paragraph("Mapeo de actores de cooperacion internacional. Corte: primer semestre 2026.", sub_style),
-        HRFlowable(width="100%", color=colors.HexColor("#F5A623"), thickness=2, spaceAfter=10),
+        HRFlowable(width="100%", color=colors.HexColor("#FDBC2D"), thickness=2, spaceAfter=10),
     ]
 
     kpi_data = [["Indicador", "Valor"]] + kpis
     kpi_table = Table(kpi_data, colWidths=[9 * cm, 6 * cm])
     kpi_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#003087")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0765AD")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D9E6")),
@@ -477,7 +478,7 @@ def to_pdf(df, kpis):
         ])
     detail_table = Table(table_data, colWidths=[5.5 * cm, 2.6 * cm, 2.8 * cm, 3.7 * cm, 2.4 * cm], repeatRows=1)
     detail_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#003087")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0765AD")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTSIZE", (0, 0), (-1, -1), 7.5),
         ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#D1D9E6")),
@@ -505,7 +506,7 @@ col_title, col_logo = st.columns([2, 2])
 with col_title:
     st.markdown(
         '<div style="padding: 0.6rem 0 0.2rem 0;">'
-        '<div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:1.35rem;color:#003087;line-height:1.3;">'
+        '<div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:1.35rem;color:#0765AD;line-height:1.3;">'
         'Ficha de Cooperacion Internacional'
         '</div>'
         '<div style="font-size:0.85rem;color:#5A6A85;margin-top:4px;">'
@@ -590,7 +591,7 @@ if nav == nav_options[0]:
     with col_b:
         st.markdown("**Fase de los proyectos**")
         if not fase_counts.empty:
-            st.altair_chart(bar_chart(fase_counts, "etiqueta", "intervenciones", color="#1565C0"), use_container_width=True)
+            st.altair_chart(bar_chart(fase_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True)
             st.dataframe(
                 fase_counts[["etiqueta", "intervenciones"]].rename(
                     columns={"etiqueta": "Fase", "intervenciones": "Intervenciones"}),
@@ -622,7 +623,7 @@ if nav == nav_options[0]:
     with col_d:
         st.markdown("**Intervenciones por organizacion ejecutora**")
         if not org_counts.empty:
-            st.altair_chart(bar_chart(org_counts, "etiqueta", "intervenciones", color="#1565C0"), use_container_width=True)
+            st.altair_chart(bar_chart(org_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True)
         else:
             st.info("No hay datos de organizacion ejecutora registrados.")
 
