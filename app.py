@@ -184,6 +184,9 @@ div[data-testid="stDataFrame"] {
     border: 1px solid var(--apc-border);
     overflow: hidden;
 }
+[data-testid="stArrowVegaLiteChart"], [data-testid="stVegaLiteChart"] {
+    background-color: #FFFFFF !important;
+}
 
 div[data-testid="stDownloadButton"] button {
     background: var(--apc-blue) !important;
@@ -371,16 +374,22 @@ def exploded_ods_counts(series):
 
 
 def bar_chart(df, y_field, x_field, color="#0765AD"):
-    return (
+    text_dark = "#0B3B5C"
+    grid_color = "#E3ECF2"
+    chart = (
         alt.Chart(df)
         .mark_bar(color=color, cornerRadiusTopRight=4, cornerRadiusBottomRight=4)
         .encode(
-            y=alt.Y(f"{y_field}:N", sort="-x", title=""),
-            x=alt.X(f"{x_field}:Q", title="Intervenciones"),
+            y=alt.Y(f"{y_field}:N", sort="-x", title="",
+                    axis=alt.Axis(labelColor=text_dark, labelFontSize=11, domainColor=grid_color, tickColor=grid_color)),
+            x=alt.X(f"{x_field}:Q", title="Intervenciones",
+                    axis=alt.Axis(labelColor=text_dark, titleColor=text_dark, gridColor=grid_color, domainColor=grid_color, tickColor=grid_color)),
             tooltip=[f"{y_field}:N", f"{x_field}:Q"],
         )
-        .properties(height=max(180, 32 * len(df)))
+        .properties(height=max(180, 32 * len(df)), background="#FFFFFF")
+        .configure_view(strokeWidth=0)
     )
+    return chart
 
 
 # ============================================================================
@@ -580,7 +589,7 @@ if nav == nav_options[0]:
     with col_a:
         st.markdown("**Intervenciones por tipo de sector**")
         if not sector_counts.empty:
-            st.altair_chart(bar_chart(sector_counts, "etiqueta", "intervenciones"), use_container_width=True)
+            st.altair_chart(bar_chart(sector_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
             st.dataframe(
                 sector_counts[["etiqueta", "intervenciones"]].rename(
                     columns={"etiqueta": "Sector", "intervenciones": "Intervenciones"}),
@@ -591,7 +600,7 @@ if nav == nav_options[0]:
     with col_b:
         st.markdown("**Fase de los proyectos**")
         if not fase_counts.empty:
-            st.altair_chart(bar_chart(fase_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True)
+            st.altair_chart(bar_chart(fase_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True, theme=None)
             st.dataframe(
                 fase_counts[["etiqueta", "intervenciones"]].rename(
                     columns={"etiqueta": "Fase", "intervenciones": "Intervenciones"}),
@@ -603,7 +612,7 @@ if nav == nav_options[0]:
     st.markdown('<div class="section-header">Objetivos de Desarrollo Sostenible (ODS)</div>', unsafe_allow_html=True)
     if not ods_counts.empty:
         st.altair_chart(bar_chart(ods_counts.sort_values("intervenciones", ascending=False).head(10), "etiqueta", "intervenciones"),
-                         use_container_width=True)
+                         use_container_width=True, theme=None)
         st.dataframe(
             ods_counts[["etiqueta", "intervenciones"]].rename(
                 columns={"etiqueta": "ODS", "intervenciones": "Intervenciones"}),
@@ -617,20 +626,20 @@ if nav == nav_options[0]:
     with col_c:
         st.markdown("**Intervenciones por actor / cooperante**")
         if not actor_counts.empty:
-            st.altair_chart(bar_chart(actor_counts, "etiqueta", "intervenciones"), use_container_width=True)
+            st.altair_chart(bar_chart(actor_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
         else:
             st.info("No hay datos de actor / cooperante registrados.")
     with col_d:
         st.markdown("**Intervenciones por organizacion ejecutora**")
         if not org_counts.empty:
-            st.altair_chart(bar_chart(org_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True)
+            st.altair_chart(bar_chart(org_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True, theme=None)
         else:
             st.info("No hay datos de organizacion ejecutora registrados.")
 
     if mun_sel_key is None:
         st.markdown('<div class="section-header">Municipios</div>', unsafe_allow_html=True)
         if not mun_counts.empty:
-            st.altair_chart(bar_chart(mun_counts, "etiqueta", "intervenciones"), use_container_width=True)
+            st.altair_chart(bar_chart(mun_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
         else:
             st.info("No hay datos de municipio registrados.")
 
