@@ -74,6 +74,24 @@ label p {
     color: var(--apc-text) !important;
     border-color: var(--apc-border) !important;
 }
+[data-baseweb="select"] * {
+    color: var(--apc-text) !important;
+}
+[data-baseweb="popover"], [data-baseweb="menu"] {
+    background-color: #FFFFFF !important;
+}
+li[role="option"] {
+    background-color: #FFFFFF !important;
+    color: var(--apc-text) !important;
+}
+li[role="option"]:hover, li[aria-selected="true"] {
+    background-color: var(--apc-light) !important;
+}
+/* Texto de los botones de descarga: debe quedar blanco sobre el boton azul */
+[data-testid="stDownloadButton"] p,
+[data-testid="stDownloadButton"] div[data-testid="stMarkdownContainer"] p {
+    color: #FFFFFF !important;
+}
 /* Excepciones: estos textos van sobre fondo azul, deben quedar blancos */
 [data-testid="stMarkdownContainer"] p.apc-header-title {
     color: #FFFFFF !important;
@@ -483,7 +501,7 @@ df = load_data()
 # ============================================================================
 # HEADER
 # ============================================================================
-col_title, col_logo = st.columns([3, 1])
+col_title, col_logo = st.columns([2, 2])
 with col_title:
     st.markdown(
         '<div style="padding: 0.6rem 0 0.2rem 0;">'
@@ -497,7 +515,7 @@ with col_title:
     )
 with col_logo:
     try:
-        st.image(LOGO_1, width=110)
+        st.image(LOGO_1, width=280)
     except Exception:
         pass
 
