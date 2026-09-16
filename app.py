@@ -2,11 +2,13 @@
 # ============================================================================
 # Ficha de Cooperacion Internacional - GUAVIARE
 # Version simplificada, adaptada a partir de la Ficha nacional de APC-Colombia,
-# para trabajar con el archivo de mapeo de actores de cooperacion internacional
-# en el departamento del Guaviare (encuesta / formulario de campo).
+# para trabajar con el archivo de mapeo de proyectos de cooperacion
+# internacional en el departamento del Guaviare (formulario de campo 2025-2026).
 # ============================================================================
 import streamlit as st
 import pandas as pd
+import re
+import unicodedata
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -24,13 +26,13 @@ st.set_page_config(
 # --------------------------------------------------------------------------
 # ARCHIVOS DE DATOS Y LOGOS (ajusta estos nombres si cambian)
 # --------------------------------------------------------------------------
-FILE = "Primer_semestre_2026_mapeo.xlsx"
-SHEET = "Mapeo_de_actoresV3_0"
+FILE = "Mapeo_CI_Proyectos_a_2025_-_2026.xlsx"
+SHEET = "COOPERACION_INTERNACIONAL_M_0"
 LOGO_1 = "logo_gobernacion.png"   # opcional, si no existe se omite
 LOGO_2 = "logo_sncic.png"         # opcional, si no existe se omite
 
 # ============================================================================
-# ESTILOS (identidad visual institucional, adaptada del manual original)
+# ESTILOS (identidad visual institucional, sin franja/acentos en rojo)
 # ============================================================================
 st.markdown("""
 <style>
@@ -38,8 +40,8 @@ st.markdown("""
 
 :root {
     --apc-blue: #0765AD;
+    --apc-blue-dark: #054F82;
     --apc-green: #00A859;
-    --apc-red: #ED3237;
     --apc-yellow: #FDBC2D;
     --apc-light: #EAF4FB;
     --apc-gray: #F7F8FA;
@@ -104,7 +106,6 @@ li[role="option"]:hover, li[aria-selected="true"] {
 .apc-header {
     background: var(--apc-blue);
     padding: 1.2rem 2.2rem 1rem 2.2rem;
-    border-bottom: 4px solid var(--apc-red);
 }
 .apc-header-title {
     color: white;
@@ -120,7 +121,7 @@ li[role="option"]:hover, li[aria-selected="true"] {
 }
 .apc-flag-bar {
     height: 5px;
-    background: linear-gradient(90deg, var(--apc-green) 25%, var(--apc-blue) 25% 50%, var(--apc-yellow) 50% 75%, var(--apc-red) 75%);
+    background: linear-gradient(90deg, var(--apc-green) 33.3%, var(--apc-blue) 33.3% 66.6%, var(--apc-yellow) 66.6%);
     margin-bottom: 1.4rem;
 }
 
@@ -133,7 +134,7 @@ li[role="option"]:hover, li[aria-selected="true"] {
     padding: 0.75rem 1.5rem;
     border-radius: 6px;
     margin-bottom: 1.2rem;
-    border-left: 6px solid var(--apc-red);
+    border-left: 6px solid var(--apc-yellow);
 }
 
 .section-header {
@@ -197,7 +198,7 @@ div[data-testid="stDownloadButton"] button {
     font-weight: 600 !important;
     text-transform: uppercase;
 }
-div[data-testid="stDownloadButton"] button:hover { background: var(--apc-red) !important; }
+div[data-testid="stDownloadButton"] button:hover { background: var(--apc-blue-dark) !important; }
 
 .guia-card {
     background: white;
@@ -213,7 +214,7 @@ div[data-testid="stDownloadButton"] button:hover { background: var(--apc-red) !i
     font-weight: 700;
     color: var(--apc-blue);
     background: var(--apc-light);
-    border-left: 5px solid var(--apc-red);
+    border-left: 5px solid var(--apc-yellow);
     border-radius: 0 6px 6px 0;
     padding: 0.8rem 1.2rem;
     margin-bottom: 1.4rem;
@@ -241,16 +242,12 @@ MUNICIPIOS_MAP = {
     "miraflores": "Miraflores",
 }
 
-SECTOR_MAP = {
-    "otra": "Otro",
-    "caracter_publico": "Caracter publico",
-    "caracter_privado": "Caracter privado",
-}
-
-FASE_MAP = {
-    "ejecucion": "En ejecucion",
-    "finalizacion": "Finalizacion",
-    "diseno": "En diseno",
+POBLACION_MAP = {
+    "ninos": "Niños", "ninas": "Niñas",
+    "jovenes": "Jóvenes", "mujeres": "Mujeres", "hombres": "Hombres", "adultos": "Adultos",
+    "etnicos": "Étnicos", "afro": "Afro", "desplazados": "Desplazados",
+    "discapacitados": "Discapacitados", "reincorporados": "Reincorporados",
+    "lgbtiq": "LGBTIQ+",
 }
 
 ODS_NOMBRES = {
@@ -270,6 +267,38 @@ ODS_NOMBRES = {
 }
 
 
+def normalize_key(s):
+    """Normaliza texto a snake_case sin tildes, para poder comparar/mapear."""
+    if not isinstance(s, str):
+        return ""
+    s = s.strip().lower()
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = re.sub(r"[\s\-]+", "_", s)
+    s = re.sub(r"[^a-z0-9_]", "", s)
+    return s
+
+
+def split_multi_normalized(value):
+    """Campos de seleccion multiple (ej. municipios) separados por coma."""
+    if not isinstance(value, str) or not value.strip():
+        return []
+    return [normalize_key(p) for p in value.split(",") if p.strip()]
+
+
+def split_multi_plain(value):
+    """Campos de seleccion multiple donde se conserva el texto tal cual."""
+    if not isinstance(value, str) or not value.strip():
+        return []
+    return [p.strip() for p in value.split(",") if p.strip()]
+
+
+def extract_ods_list(value):
+    if not isinstance(value, str) or not value.strip():
+        return []
+    return re.findall(r"\d+", value)
+
+
 def municipio_label(x):
     if not x:
         return "Sin dato"
@@ -279,21 +308,17 @@ def municipio_label(x):
 def sector_label(x):
     if not x:
         return "Sin dato"
-    return SECTOR_MAP.get(x, x.replace("_", " ").title())
+    return x.replace("_", " ").strip().title()
 
 
-def fase_label(x):
+def poblacion_label(x):
     if not x:
         return "Sin dato"
-    return FASE_MAP.get(x, x.replace("_", " ").capitalize())
+    return POBLACION_MAP.get(normalize_key(x), x.strip().title())
 
 
-def format_usd(n):
-    try:
-        n = float(n)
-    except Exception:
-        return "USD 0"
-    return "USD " + f"{n:,.0f}".replace(",", ".")
+def ods_label(x):
+    return ODS_NOMBRES.get(x, f"ODS {x}")
 
 
 def format_int(n):
@@ -308,24 +333,18 @@ def format_int(n):
 # CARGA Y LIMPIEZA DE DATOS
 # ============================================================================
 COLMAP = {
-    "1.FECHA REGISTRO DE LA INTERVENCIÓN": "fecha_registro",
-    "3.Nombre de la entidad /organización": "organizacion_ejecutora",
-    "6.Nombre Intervención": "nombre_intervencion",
-    "7.Objetivo General": "objetivo",
-    "8.Fecha Inicial": "fecha_inicial",
-    "9.Fecha Final": "fecha_final",
-    "10.Sector al que pertenece": "sector",
-    "¿Cuál?": "sector_otro",
-    "11. Estado Intervención": "estado",
-    "13.Municipio": "municipio",
-    "17. Valor Aporte (USD)": "valor_usd",
-    "18.Mencione el número de participantes": "participantes",
-    "19.A qué población atiende el proyecto": "poblacion",
-    "22.¿En qué fase se encuentra el proyecto?": "fase",
-    "23.¿Con que entidades/organizaciones ha articulado para la ejecucion del proyecto?": "entidades_articuladas",
-    "30.Origen del actor": "origen_actor",
-    "31.País actor": "actor_financiador",
-    "32.ODS": "ods",
+    "1. Fecha de registro de la intervención": "fecha_registro",
+    "5.Pais de origen del donante": "donante_pais",
+    "6.Nombre del donante/cooperante": "donante_nombre",
+    "8.Nombre de la entidad /organización que ejecuta el proyecto.": "organizacion_ejecutora",
+    "9.Nombre del proyecto/programa": "nombre_intervencion",
+    "10.Fecha de inicio": "fecha_inicial",
+    "11.Fecha de finalización": "fecha_final",
+    "13.Seleccione el sector que mejor describe el proyecto": "sector_raw",
+    "14.Objetivo general": "objetivo",
+    "19.Municipios a intervenir": "municipio_raw",
+    "23.Qué población atiende el proyecto": "poblacion_raw",
+    "29.Mencione el/los objetivos de Desarrollo Sostenible-ODS (Agenda 2030) a los que apunta el proyecto": "ods_raw",
 }
 
 
@@ -336,20 +355,36 @@ def load_data():
     for needed in COLMAP.values():
         if needed not in df.columns:
             df[needed] = ""
+
+    text_cols = [
+        "donante_pais", "donante_nombre", "organizacion_ejecutora", "nombre_intervencion",
+        "sector_raw", "objetivo", "municipio_raw", "poblacion_raw", "ods_raw",
+    ]
     # Nota: se limpia por columna (no por dtype) porque pandas >= 2.x puede
     # asignar dtype "str" en vez de "object" a columnas de texto, y un chequeo
     # por dtype == "object" las deja pasar sin limpiar.
-    text_cols = [c for c in COLMAP.values() if c not in ("valor_usd", "participantes")]
     for c in text_cols:
         df[c] = df[c].where(df[c].notna(), "")
         df[c] = df[c].astype(str).str.strip()
         df[c] = df[c].replace({"nan": "", "None": "", "NA": "", "na": "", "N/A": ""})
-    df["valor_usd"] = pd.to_numeric(df["valor_usd"], errors="coerce").fillna(0)
-    df["participantes"] = pd.to_numeric(df["participantes"], errors="coerce").fillna(0)
+
+    df["fecha_registro"] = pd.to_datetime(df["fecha_registro"], errors="coerce")
+    df["fecha_inicial"] = pd.to_datetime(df["fecha_inicial"], errors="coerce")
+    df["fecha_final"] = pd.to_datetime(df["fecha_final"], errors="coerce")
+    df["anio_inicio"] = df["fecha_inicial"].dt.year
+
+    df["municipio_list"] = df["municipio_raw"].apply(split_multi_normalized)
+    df["sector_list"] = df["sector_raw"].apply(split_multi_plain)
+    df["poblacion_list"] = df["poblacion_raw"].apply(split_multi_plain)
+    df["ods_list"] = df["ods_raw"].apply(extract_ods_list)
+
+    hoy = pd.Timestamp.now().normalize()
+    df["activo_hoy"] = (df["fecha_inicial"] <= hoy) & (df["fecha_final"] >= hoy)
     return df
 
 
 def counts_table(series, label_fn, value_name="intervenciones"):
+    """Para columnas de un solo valor por fila (ej. donante, organizacion)."""
     s = series.replace("", pd.NA).dropna()
     if s.empty:
         return pd.DataFrame(columns=["clave", "etiqueta", value_name])
@@ -359,17 +394,16 @@ def counts_table(series, label_fn, value_name="intervenciones"):
     return out
 
 
-def exploded_ods_counts(series):
-    s = series.replace("", pd.NA).dropna().astype(str)
-    if s.empty:
-        return pd.DataFrame(columns=["clave", "etiqueta", "intervenciones"])
-    exp = s.str.split(",").explode().str.strip()
-    exp = exp[exp != ""]
-    if exp.empty:
-        return pd.DataFrame(columns=["clave", "etiqueta", "intervenciones"])
-    out = exp.value_counts().reset_index()
-    out.columns = ["clave", "intervenciones"]
-    out["etiqueta"] = out["clave"].map(lambda x: ODS_NOMBRES.get(x, f"ODS {x}"))
+def counts_from_lists(series_of_lists, label_fn, value_name="intervenciones"):
+    """Para columnas de seleccion multiple (ej. sector, municipio, ODS)."""
+    exploded = series_of_lists.explode()
+    exploded = exploded.dropna()
+    exploded = exploded[exploded != ""]
+    if exploded.empty:
+        return pd.DataFrame(columns=["clave", "etiqueta", value_name])
+    out = exploded.value_counts().reset_index()
+    out.columns = ["clave", value_name]
+    out["etiqueta"] = out["clave"].map(label_fn)
     return out
 
 
@@ -395,42 +429,42 @@ def bar_chart(df, y_field, x_field, color="#0765AD"):
 # ============================================================================
 # EXPORTACION: EXCEL Y PDF
 # ============================================================================
-EXPORT_LABELS = {
-    "nombre_intervencion": "Nombre intervencion",
-    "organizacion_ejecutora": "Organizacion ejecutora",
-    "sector_label": "Sector",
-    "municipio_label": "Municipio",
-    "fase_label": "Fase",
-    "actor_financiador": "Actor / cooperante",
-    "origen_actor": "Origen del actor",
-    "valor_usd": "Valor aporte (USD)",
-    "participantes": "Participantes",
-    "ods": "ODS",
-    "estado": "Estado intervencion",
-    "objetivo": "Objetivo general",
-}
-
-
 def build_export_df(df):
     d = df.copy()
-    d["sector_label"] = d["sector"].map(sector_label)
-    d["municipio_label"] = d["municipio"].map(municipio_label)
-    d["fase_label"] = d["fase"].map(fase_label)
-    cols = [c for c in EXPORT_LABELS if c in d.columns]
-    d = d[cols].rename(columns=EXPORT_LABELS)
-    return d
+    d["Sector(es)"] = d["sector_list"].apply(lambda l: ", ".join(sector_label(x) for x in l) if l else "Sin dato")
+    d["Municipio(s)"] = d["municipio_list"].apply(lambda l: ", ".join(municipio_label(x) for x in l) if l else "Sin dato")
+    d["Poblacion atendida"] = d["poblacion_list"].apply(lambda l: ", ".join(poblacion_label(x) for x in l) if l else "Sin dato")
+    d["ODS"] = d["ods_list"].apply(lambda l: ", ".join(ods_label(x) for x in l) if l else "Sin dato")
+    d["Fecha inicio"] = d["fecha_inicial"].dt.strftime("%Y-%m-%d").fillna("")
+    d["Fecha finalizacion"] = d["fecha_final"].dt.strftime("%Y-%m-%d").fillna("")
+
+    d = d.rename(columns={
+        "nombre_intervencion": "Nombre del proyecto",
+        "organizacion_ejecutora": "Organizacion ejecutora",
+        "donante_nombre": "Donante / cooperante",
+        "donante_pais": "Pais de origen del donante",
+        "objetivo": "Objetivo general",
+    })
+    cols = [
+        "Nombre del proyecto", "Organizacion ejecutora", "Donante / cooperante",
+        "Pais de origen del donante", "Sector(es)", "Municipio(s)",
+        "Fecha inicio", "Fecha finalizacion", "Poblacion atendida", "ODS",
+        "Objetivo general",
+    ]
+    cols = [c for c in cols if c in d.columns]
+    return d[cols]
 
 
-def to_excel(df, sector_counts, fase_counts, ods_counts, mun_counts):
+def to_excel(df, sector_counts, poblacion_counts, ods_counts, mun_counts):
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         build_export_df(df).to_excel(writer, sheet_name="Intervenciones", index=False)
         sector_counts.rename(columns={"etiqueta": "Sector", "intervenciones": "Intervenciones"})[
             ["Sector", "Intervenciones"]
         ].to_excel(writer, sheet_name="Sectores", index=False)
-        fase_counts.rename(columns={"etiqueta": "Fase", "intervenciones": "Intervenciones"})[
-            ["Fase", "Intervenciones"]
-        ].to_excel(writer, sheet_name="Fase", index=False)
+        poblacion_counts.rename(columns={"etiqueta": "Poblacion", "intervenciones": "Intervenciones"})[
+            ["Poblacion", "Intervenciones"]
+        ].to_excel(writer, sheet_name="Poblacion atendida", index=False)
         ods_counts.rename(columns={"etiqueta": "ODS", "intervenciones": "Intervenciones"})[
             ["ODS", "Intervenciones"]
         ].to_excel(writer, sheet_name="ODS", index=False)
@@ -441,7 +475,7 @@ def to_excel(df, sector_counts, fase_counts, ods_counts, mun_counts):
     return output.getvalue()
 
 
-def to_pdf(df, kpis):
+def to_pdf(df_export, kpis):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
@@ -459,7 +493,7 @@ def to_pdf(df, kpis):
 
     elements = [
         Paragraph("Ficha de Cooperacion Internacional - Guaviare", title_style),
-        Paragraph("Mapeo de actores de cooperacion internacional. Corte: primer semestre 2026.", sub_style),
+        Paragraph("Mapeo de proyectos de cooperacion internacional en Guaviare. Periodo: 2025-2026.", sub_style),
         HRFlowable(width="100%", color=colors.HexColor("#FDBC2D"), thickness=2, spaceAfter=10),
     ]
 
@@ -474,18 +508,19 @@ def to_pdf(df, kpis):
         ("TOPPADDING", (0, 0), (-1, -1), 5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
     ]))
-    elements += [kpi_table, Spacer(1, 0.6 * cm), Paragraph("Listado de intervenciones", section_style)]
+    elements += [kpi_table, Spacer(1, 0.6 * cm), Paragraph("Listado de proyectos", section_style)]
 
-    table_data = [["Intervencion", "Sector", "Municipio", "Organizacion", "Aporte (USD)"]]
-    for _, row in df.iterrows():
+    table_data = [["Proyecto", "Sector(es)", "Municipio(s)", "Organizacion", "Inicio", "Fin"]]
+    for _, row in df_export.iterrows():
         table_data.append([
-            Paragraph(str(row.get("nombre_intervencion", ""))[:70], cell_style),
-            sector_label(row.get("sector", "")),
-            municipio_label(row.get("municipio", "")),
-            Paragraph(str(row.get("organizacion_ejecutora", ""))[:40], cell_style),
-            format_usd(row.get("valor_usd", 0)),
+            Paragraph(str(row.get("Nombre del proyecto", ""))[:60], cell_style),
+            Paragraph(str(row.get("Sector(es)", ""))[:35], cell_style),
+            Paragraph(str(row.get("Municipio(s)", ""))[:35], cell_style),
+            Paragraph(str(row.get("Organizacion ejecutora", ""))[:35], cell_style),
+            str(row.get("Fecha inicio", "")),
+            str(row.get("Fecha finalizacion", "")),
         ])
-    detail_table = Table(table_data, colWidths=[5.5 * cm, 2.6 * cm, 2.8 * cm, 3.7 * cm, 2.4 * cm], repeatRows=1)
+    detail_table = Table(table_data, colWidths=[4.3 * cm, 2.6 * cm, 2.6 * cm, 3.2 * cm, 1.9 * cm, 1.9 * cm], repeatRows=1)
     detail_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0765AD")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -519,7 +554,7 @@ with col_title:
         'Ficha de Cooperacion Internacional'
         '</div>'
         '<div style="font-size:0.85rem;color:#5A6A85;margin-top:4px;">'
-        'Departamento del Guaviare &mdash; Mapeo de actores, primer semestre 2026'
+        'Departamento del Guaviare &mdash; Mapeo de proyectos de cooperacion internacional 2025-2026'
         '</div></div>',
         unsafe_allow_html=True
     )
@@ -541,73 +576,88 @@ st.markdown("---")
 if nav == nav_options[0]:
     st.markdown('<div class="dept-title-banner">GUAVIARE &mdash; Cooperacion Internacional</div>', unsafe_allow_html=True)
 
-    # -- Filtro por municipio --
-    mun_keys_presentes = sorted(df["municipio"].replace("", pd.NA).dropna().unique().tolist())
+    # -- Filtros: municipio y año --
+    mun_keys_presentes = sorted(df["municipio_list"].explode().replace("", pd.NA).dropna().unique().tolist())
     mun_label_to_key = {"Todos los municipios": None}
     mun_label_to_key.update({municipio_label(k): k for k in mun_keys_presentes})
     mun_opciones = list(mun_label_to_key.keys())
-    col_filtro, _ = st.columns([1, 3])
-    with col_filtro:
-        mun_sel_label = st.selectbox("Filtrar por municipio", mun_opciones, key="filtro_municipio")
-    mun_sel_key = mun_label_to_key[mun_sel_label]
 
+    anios_presentes = sorted(df["anio_inicio"].dropna().unique().tolist())
+    anio_label_to_key = {"Todos los años": None}
+    anio_label_to_key.update({str(int(a)): int(a) for a in anios_presentes})
+    anio_opciones = list(anio_label_to_key.keys())
+
+    col_filtro1, col_filtro2, _ = st.columns([1, 1, 2])
+    with col_filtro1:
+        mun_sel_label = st.selectbox("Filtrar por municipio", mun_opciones, key="filtro_municipio")
+    with col_filtro2:
+        anio_sel_label = st.selectbox("Filtrar por año de inicio", anio_opciones, key="filtro_anio")
+    mun_sel_key = mun_label_to_key[mun_sel_label]
+    anio_sel_key = anio_label_to_key[anio_sel_label]
+
+    df_view = df
     if mun_sel_key is not None:
-        df_view = df[df["municipio"] == mun_sel_key].reset_index(drop=True)
-    else:
-        df_view = df
+        df_view = df_view[df_view["municipio_list"].apply(lambda lst: mun_sel_key in lst)]
+    if anio_sel_key is not None:
+        df_view = df_view[df_view["anio_inicio"] == anio_sel_key]
+    df_view = df_view.reset_index(drop=True)
 
     total_intervenciones = len(df_view)
     total_organizaciones = df_view["organizacion_ejecutora"].replace("", pd.NA).dropna().nunique()
-    total_municipios = df_view["municipio"].replace("", pd.NA).dropna().nunique()
-    total_usd = df_view["valor_usd"].sum()
-    total_participantes = df_view["participantes"].sum()
-    total_cooperantes = df_view["actor_financiador"].replace("", pd.NA).dropna().nunique()
+    total_donantes = df_view["donante_nombre"].replace("", pd.NA).dropna().nunique()
+    total_municipios = df_view["municipio_list"].explode().replace("", pd.NA).dropna().nunique()
+    total_activos = int(df_view["activo_hoy"].sum())
 
-    sector_counts = counts_table(df_view["sector"], sector_label)
-    fase_counts = counts_table(df_view["fase"], fase_label)
-    mun_counts = counts_table(df_view["municipio"], municipio_label)
-    ods_counts = exploded_ods_counts(df_view["ods"])
-    actor_counts = counts_table(df_view["actor_financiador"], lambda x: x)
+    sector_counts = counts_from_lists(df_view["sector_list"], sector_label)
+    poblacion_counts = counts_from_lists(df_view["poblacion_list"], poblacion_label)
+    mun_counts = counts_from_lists(df_view["municipio_list"], municipio_label)
+    ods_counts = counts_from_lists(df_view["ods_list"], ods_label)
+    donante_counts = counts_table(df_view["donante_nombre"], lambda x: x)
     org_counts = counts_table(df_view["organizacion_ejecutora"], lambda x: x)
 
+    filtro_txt = []
+    if mun_sel_key is not None:
+        filtro_txt.append(f"en {mun_sel_label}")
+    if anio_sel_key is not None:
+        filtro_txt.append(f"con inicio en {anio_sel_label}")
+    filtro_str = " ".join(filtro_txt) if filtro_txt else "en todo el departamento"
+
     st.caption(
-        f"Fuente: mapeo de actores de cooperacion internacional en Guaviare. "
-        f"Corte: primer semestre 2026. {total_intervenciones} intervenciones registradas"
-        + (f" en {mun_sel_label}." if mun_sel_key is not None else " en todo el departamento.")
+        f"Fuente: mapeo de proyectos de cooperacion internacional en Guaviare. "
+        f"Periodo: 2025-2026. {total_intervenciones} proyectos registrados {filtro_str}."
     )
 
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.metric("Intervenciones", format_int(total_intervenciones))
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Proyectos", format_int(total_intervenciones))
     c2.metric("Organizaciones ejecutoras", format_int(total_organizaciones))
-    c3.metric("Actores / cooperantes", format_int(total_cooperantes))
+    c3.metric("Donantes / cooperantes", format_int(total_donantes))
     c4.metric("Municipios", format_int(total_municipios))
-    c5.metric("Total aporte estimado", format_usd(total_usd))
-    c6.metric("Participantes reportados", format_int(total_participantes))
+    c5.metric("Proyectos vigentes hoy", format_int(total_activos))
 
-    st.markdown('<div class="section-header">Sectores y fase de los proyectos</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Sectores y poblacion atendida</div>', unsafe_allow_html=True)
     col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown("**Intervenciones por tipo de sector**")
+        st.markdown("**Proyectos por sector**")
         if not sector_counts.empty:
             st.altair_chart(bar_chart(sector_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
             st.dataframe(
                 sector_counts[["etiqueta", "intervenciones"]].rename(
-                    columns={"etiqueta": "Sector", "intervenciones": "Intervenciones"}),
+                    columns={"etiqueta": "Sector", "intervenciones": "Proyectos"}),
                 use_container_width=True, hide_index=True
             )
         else:
             st.info("No hay datos de sector registrados.")
     with col_b:
-        st.markdown("**Fase de los proyectos**")
-        if not fase_counts.empty:
-            st.altair_chart(bar_chart(fase_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True, theme=None)
+        st.markdown("**Poblacion atendida**")
+        if not poblacion_counts.empty:
+            st.altair_chart(bar_chart(poblacion_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True, theme=None)
             st.dataframe(
-                fase_counts[["etiqueta", "intervenciones"]].rename(
-                    columns={"etiqueta": "Fase", "intervenciones": "Intervenciones"}),
+                poblacion_counts[["etiqueta", "intervenciones"]].rename(
+                    columns={"etiqueta": "Poblacion", "intervenciones": "Proyectos"}),
                 use_container_width=True, hide_index=True
             )
         else:
-            st.info("No hay datos de fase registrados.")
+            st.info("No hay datos de poblacion atendida registrados.")
 
     st.markdown('<div class="section-header">Objetivos de Desarrollo Sostenible (ODS)</div>', unsafe_allow_html=True)
     if not ods_counts.empty:
@@ -615,22 +665,22 @@ if nav == nav_options[0]:
                          use_container_width=True, theme=None)
         st.dataframe(
             ods_counts[["etiqueta", "intervenciones"]].rename(
-                columns={"etiqueta": "ODS", "intervenciones": "Intervenciones"}),
+                columns={"etiqueta": "ODS", "intervenciones": "Proyectos"}),
             use_container_width=True, hide_index=True
         )
     else:
         st.info("No hay datos de ODS registrados.")
 
-    st.markdown('<div class="section-header">Cooperantes y organizaciones ejecutoras</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Donantes y organizaciones ejecutoras</div>', unsafe_allow_html=True)
     col_c, col_d = st.columns(2)
     with col_c:
-        st.markdown("**Intervenciones por actor / cooperante**")
-        if not actor_counts.empty:
-            st.altair_chart(bar_chart(actor_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
+        st.markdown("**Proyectos por donante / cooperante**")
+        if not donante_counts.empty:
+            st.altair_chart(bar_chart(donante_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
         else:
-            st.info("No hay datos de actor / cooperante registrados.")
+            st.info("No hay datos de donante / cooperante registrados.")
     with col_d:
-        st.markdown("**Intervenciones por organizacion ejecutora**")
+        st.markdown("**Proyectos por organizacion ejecutora**")
         if not org_counts.empty:
             st.altair_chart(bar_chart(org_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True, theme=None)
         else:
@@ -643,32 +693,36 @@ if nav == nav_options[0]:
         else:
             st.info("No hay datos de municipio registrados.")
 
-    st.markdown('<div class="section-header">Listado detallado de intervenciones</div>', unsafe_allow_html=True)
-    st.dataframe(build_export_df(df_view), use_container_width=True, hide_index=True)
+    st.markdown('<div class="section-header">Listado detallado de proyectos</div>', unsafe_allow_html=True)
+    df_export = build_export_df(df_view)
+    st.dataframe(df_export, use_container_width=True, hide_index=True)
 
     kpis_pdf = [
-        ["Intervenciones", format_int(total_intervenciones)],
+        ["Proyectos", format_int(total_intervenciones)],
         ["Organizaciones ejecutoras", format_int(total_organizaciones)],
-        ["Actores / cooperantes", format_int(total_cooperantes)],
-        ["Municipios con intervencion", format_int(total_municipios)],
-        ["Total aporte estimado", format_usd(total_usd)],
-        ["Participantes reportados", format_int(total_participantes)],
+        ["Donantes / cooperantes", format_int(total_donantes)],
+        ["Municipios con proyectos", format_int(total_municipios)],
+        ["Proyectos vigentes hoy", format_int(total_activos)],
     ]
 
-    file_suffix = "guaviare" if mun_sel_key is None else mun_sel_key
+    file_suffix = "guaviare"
+    if mun_sel_key is not None:
+        file_suffix += f"_{mun_sel_key}"
+    if anio_sel_key is not None:
+        file_suffix += f"_{anio_sel_key}"
 
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
             "\u2b07\ufe0f Descargar Excel",
-            data=to_excel(df_view, sector_counts, fase_counts, ods_counts, mun_counts),
+            data=to_excel(df_view, sector_counts, poblacion_counts, ods_counts, mun_counts),
             file_name=f"ficha_cooperacion_{file_suffix}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
     with col_dl2:
         st.download_button(
             "\u2b07\ufe0f Descargar PDF",
-            data=to_pdf(df_view, kpis_pdf),
+            data=to_pdf(df_export, kpis_pdf),
             file_name=f"ficha_cooperacion_{file_suffix}.pdf",
             mime="application/pdf",
         )
@@ -687,32 +741,34 @@ elif nav == nav_options[1]:
     guia_html = (
         '<div class="guia-card">'
         '<div class="guia-intro">Que es esta herramienta?</div>'
-        '<p>Esta ficha resume el mapeo de actores de cooperacion internacional que operan '
-        'en el departamento del Guaviare, con corte al primer semestre de 2026. La informacion '
-        'proviene de un formulario de campo diligenciado por las organizaciones ejecutoras '
-        '(PNUD, WWF Colombia, Swisscontact, Rainforest Alliance, Caritas Guaviare, entre otras).</p>'
+        '<p>Esta ficha resume el mapeo de proyectos de cooperacion internacional que operan '
+        'en el departamento del Guaviare, con datos del periodo 2025-2026. La informacion '
+        'proviene de un formulario de campo diligenciado por las organizaciones ejecutoras.</p>'
         '<p><strong>De donde viene la informacion?</strong> Del archivo '
-        '<code>Primer_semestre_2026_mapeo.xlsx</code>, hoja <code>Mapeo_de_actoresV3_0</code>. '
-        'Cada fila es una intervencion reportada por una organizacion.</p>'
+        '<code>Mapeo_CI_Proyectos_a_2025_-_2026.xlsx</code>, hoja <code>COOPERACION_INTERNACIONAL_M_0</code>. '
+        'Cada fila es un proyecto reportado por una organizacion.</p>'
         '<p><strong>Como leer los indicadores?</strong> Las tarjetas superiores muestran totales '
-        'unicos: numero de intervenciones, organizaciones ejecutoras distintas, actores o '
-        'cooperantes distintos, municipios con al menos una intervencion, el aporte total '
-        'estimado en USD y los participantes reportados sumados.</p>'
-        '<p><strong>Limitaciones a tener en cuenta:</strong> esta version no incluye comparativo '
-        'con un periodo anterior (solo hay un corte disponible), y algunos campos del formulario '
-        '(sector, fase, actor financiador) tienen categorias con poca estandarizacion porque '
-        'provienen de texto libre o listas desplegadas de forma inconsistente. El listado '
-        'detallado al final del Panorama permite revisar cada intervencion tal como fue '
-        'reportada.</p>'
+        'unicos para el municipio y/o año seleccionado: numero de proyectos, organizaciones '
+        'ejecutoras distintas, donantes o cooperantes distintos, municipios con al menos un '
+        'proyecto, y los proyectos que se encuentran vigentes hoy segun sus fechas de inicio y '
+        'finalizacion.</p>'
+        '<p><strong>Filtros disponibles:</strong> se puede filtrar por municipio y por año de '
+        'inicio del proyecto. Un mismo proyecto puede abarcar varios municipios, varios sectores '
+        'y varios ODS a la vez; por eso los conteos por municipio, sector, poblacion y ODS pueden '
+        'sumar mas que el numero total de proyectos.</p>'
+        '<p><strong>Limitaciones a tener en cuenta:</strong> esta version no incluye el valor '
+        'estimado del aporte de cada proyecto ni el numero de participantes, porque el formulario '
+        'actual no recoge esos datos de forma numerica comparable. El listado detallado al final '
+        'del Panorama permite revisar cada proyecto tal como fue reportado.</p>'
         '</div>'
     )
     st.markdown(guia_html, unsafe_allow_html=True)
 
     g1, g2 = st.columns(2)
     with g1:
-        st.info("**\U0001F4CA Panorama Guaviare**\n\nIndicadores, sectores, ODS, cooperantes y listado completo. Descarga en Excel y PDF.")
+        st.info("**\U0001F4CA Panorama Guaviare**\n\nIndicadores, sectores, ODS, donantes y listado completo. Filtra por municipio y año. Descarga en Excel y PDF.")
     with g2:
-        st.info("**Fuente**\n\nMapeo de actores de cooperacion internacional en Guaviare. Corte: primer semestre 2026.")
+        st.info("**Fuente**\n\nMapeo de proyectos de cooperacion internacional en Guaviare. Periodo: 2025-2026.")
 
     st.markdown(
         '<div class="apc-footer">Ficha de Cooperacion Internacional &mdash; Guaviare</div>',
