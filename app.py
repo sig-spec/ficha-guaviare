@@ -634,30 +634,27 @@ if nav == nav_options[0]:
     c4.metric("Municipios", format_int(total_municipios))
     c5.metric("Proyectos vigentes hoy", format_int(total_activos))
 
-    st.markdown('<div class="section-header">Sectores y poblacion atendida</div>', unsafe_allow_html=True)
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.markdown("**Proyectos por sector**")
-        if not sector_counts.empty:
-            st.altair_chart(bar_chart(sector_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
-            st.dataframe(
-                sector_counts[["etiqueta", "intervenciones"]].rename(
-                    columns={"etiqueta": "Sector", "intervenciones": "Proyectos"}),
-                use_container_width=True, hide_index=True
-            )
-        else:
-            st.info("No hay datos de sector registrados.")
-    with col_b:
-        st.markdown("**Poblacion atendida**")
-        if not poblacion_counts.empty:
-            st.altair_chart(bar_chart(poblacion_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True, theme=None)
-            st.dataframe(
-                poblacion_counts[["etiqueta", "intervenciones"]].rename(
-                    columns={"etiqueta": "Poblacion", "intervenciones": "Proyectos"}),
-                use_container_width=True, hide_index=True
-            )
-        else:
-            st.info("No hay datos de poblacion atendida registrados.")
+    st.markdown('<div class="section-header">Proyectos por sector</div>', unsafe_allow_html=True)
+    if not sector_counts.empty:
+        st.altair_chart(bar_chart(sector_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
+        st.dataframe(
+            sector_counts[["etiqueta", "intervenciones"]].rename(
+                columns={"etiqueta": "Sector", "intervenciones": "Proyectos"}),
+            use_container_width=True, hide_index=True
+        )
+    else:
+        st.info("No hay datos de sector registrados.")
+
+    st.markdown('<div class="section-header">Poblacion atendida</div>', unsafe_allow_html=True)
+    if not poblacion_counts.empty:
+        st.altair_chart(bar_chart(poblacion_counts, "etiqueta", "intervenciones", color="#00A859"), use_container_width=True, theme=None)
+        st.dataframe(
+            poblacion_counts[["etiqueta", "intervenciones"]].rename(
+                columns={"etiqueta": "Poblacion", "intervenciones": "Proyectos"}),
+            use_container_width=True, hide_index=True
+        )
+    else:
+        st.info("No hay datos de poblacion atendida registrados.")
 
     st.markdown('<div class="section-header">Objetivos de Desarrollo Sostenible (ODS)</div>', unsafe_allow_html=True)
     if not ods_counts.empty:
