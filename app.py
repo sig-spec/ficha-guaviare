@@ -679,6 +679,10 @@ if nav == nav_options[0]:
                 columns={"etiqueta": "Sector", "intervenciones": "Proyectos"}),
             use_container_width=True, hide_index=True
         )
+        st.caption(
+            f"Un mismo proyecto puede abarcar varios sectores, asi que la suma de esta tabla "
+            f"puede superar el total de {format_int(total_intervenciones)} proyectos."
+        )
     else:
         st.info("No hay datos de sector registrados.")
 
@@ -689,6 +693,10 @@ if nav == nav_options[0]:
             poblacion_counts[["etiqueta", "intervenciones"]].rename(
                 columns={"etiqueta": "Poblacion", "intervenciones": "Proyectos"}),
             use_container_width=True, hide_index=True
+        )
+        st.caption(
+            f"Un mismo proyecto puede atender a varios tipos de poblacion, asi que la suma de esta "
+            f"tabla puede superar el total de {format_int(total_intervenciones)} proyectos."
         )
     else:
         st.info("No hay datos de poblacion atendida registrados.")
@@ -701,6 +709,10 @@ if nav == nav_options[0]:
             ods_counts[["etiqueta", "intervenciones"]].rename(
                 columns={"etiqueta": "ODS", "intervenciones": "Proyectos"}),
             use_container_width=True, hide_index=True
+        )
+        st.caption(
+            f"Un mismo proyecto puede apuntar a varios ODS, asi que la suma de esta tabla puede "
+            f"superar el total de {format_int(total_intervenciones)} proyectos."
         )
     else:
         st.info("No hay datos de ODS registrados.")
@@ -724,6 +736,11 @@ if nav == nav_options[0]:
         st.markdown('<div class="section-header">Municipios</div>', unsafe_allow_html=True)
         if not mun_counts.empty:
             st.altair_chart(bar_chart(mun_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
+            st.caption(
+                f"Un mismo proyecto puede intervenir en varios municipios, asi que la suma de estas "
+                f"barras puede superar el total de {format_int(total_intervenciones)} proyectos. Usa el "
+                f"filtro de municipio arriba para ver el total exacto de un municipio especifico."
+            )
         else:
             st.info("No hay datos de municipio registrados.")
 
