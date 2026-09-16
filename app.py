@@ -434,6 +434,27 @@ def bar_chart(df, y_field, x_field, color="#0765AD"):
     return chart
 
 
+DONUT_PALETTE = ["#0765AD", "#00A859", "#FDBC2D", "#5A7185", "#7FB8E0", "#7ED0A8", "#F7D97A", "#0B3B5C"]
+
+
+def donut_chart(df, label_field, value_field):
+    text_dark = "#0B3B5C"
+    chart = (
+        alt.Chart(df)
+        .mark_arc(innerRadius=70, stroke="#FFFFFF", strokeWidth=2)
+        .encode(
+            theta=alt.Theta(f"{value_field}:Q", stack=True),
+            color=alt.Color(f"{label_field}:N", title="",
+                             scale=alt.Scale(range=DONUT_PALETTE),
+                             legend=alt.Legend(labelColor=text_dark, labelFontSize=11, symbolSize=90)),
+            tooltip=[f"{label_field}:N", f"{value_field}:Q"],
+        )
+        .properties(height=320, background="#FFFFFF")
+        .configure_view(strokeWidth=0)
+    )
+    return chart
+
+
 # ============================================================================
 # EXPORTACION: EXCEL Y PDF
 # ============================================================================
@@ -673,7 +694,7 @@ if nav == nav_options[0]:
 
     st.markdown('<div class="section-header">Proyectos por sector</div>', unsafe_allow_html=True)
     if not sector_counts.empty:
-        st.altair_chart(bar_chart(sector_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
+        st.altair_chart(donut_chart(sector_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
         st.dataframe(
             sector_counts[["etiqueta", "intervenciones"]].rename(
                 columns={"etiqueta": "Sector", "intervenciones": "Proyectos"}),
@@ -735,7 +756,7 @@ if nav == nav_options[0]:
     if mun_sel_key is None:
         st.markdown('<div class="section-header">Municipios</div>', unsafe_allow_html=True)
         if not mun_counts.empty:
-            st.altair_chart(bar_chart(mun_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
+            st.altair_chart(donut_chart(mun_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
             st.caption(
                 f"Un mismo proyecto puede intervenir en varios municipios, asi que la suma de estas "
                 f"barras puede superar el total de {format_int(total_intervenciones)} proyectos. Usa el "
@@ -748,7 +769,7 @@ if nav == nav_options[0]:
         otros_municipios_list = df_view["municipio_list"].apply(lambda lst: [m for m in lst if m != mun_sel_key])
         otros_counts = counts_from_lists(otros_municipios_list, municipio_label)
         if not otros_counts.empty:
-            st.altair_chart(bar_chart(otros_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
+            st.altair_chart(donut_chart(otros_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
             st.caption(
                 f"De los {format_int(total_intervenciones)} proyectos en {mun_sel_label}, estos tambien "
                 f"tienen actividades en los otros municipios que muestra el grafico."
