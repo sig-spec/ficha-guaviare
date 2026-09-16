@@ -743,6 +743,26 @@ if nav == nav_options[0]:
             )
         else:
             st.info("No hay datos de municipio registrados.")
+    else:
+        st.markdown('<div class="section-header">Estos proyectos tambien intervienen en</div>', unsafe_allow_html=True)
+        otros_municipios_list = df_view["municipio_list"].apply(lambda lst: [m for m in lst if m != mun_sel_key])
+        otros_counts = counts_from_lists(otros_municipios_list, municipio_label)
+        if not otros_counts.empty:
+            st.altair_chart(bar_chart(otros_counts, "etiqueta", "intervenciones"), use_container_width=True, theme=None)
+            st.caption(
+                f"De los {format_int(total_intervenciones)} proyectos en {mun_sel_label}, estos tambien "
+                f"tienen actividades en los otros municipios que muestra el grafico."
+            )
+            compartidos = df_view[otros_municipios_list.apply(len) > 0].copy()
+            compartidos["Tambien en"] = otros_municipios_list[otros_municipios_list.apply(len) > 0].apply(
+                lambda lst: ", ".join(municipio_label(m) for m in lst)
+            )
+            st.dataframe(
+                compartidos.rename(columns={"nombre_intervencion": "Proyecto"})[["Proyecto", "Tambien en"]],
+                use_container_width=True, hide_index=True
+            )
+        else:
+            st.info(f"Ninguno de los proyectos en {mun_sel_label} interviene en otros municipios.")
 
     st.markdown('<div class="section-header">Listado detallado de proyectos</div>', unsafe_allow_html=True)
     df_export = build_export_df(df_view)
