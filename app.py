@@ -439,19 +439,26 @@ DONUT_PALETTE = ["#0765AD", "#00A859", "#FDBC2D", "#5A7185", "#7FB8E0", "#7ED0A8
 
 def donut_chart(df, label_field, value_field):
     text_dark = "#0B3B5C"
-    chart = (
-        alt.Chart(df)
-        .mark_arc(innerRadius=70, stroke="#FFFFFF", strokeWidth=2)
-        .encode(
-            theta=alt.Theta(f"{value_field}:Q", stack=True),
-            color=alt.Color(f"{label_field}:N", title="",
-                             scale=alt.Scale(range=DONUT_PALETTE),
-                             legend=alt.Legend(labelColor=text_dark, labelFontSize=11, symbolSize=90)),
-            tooltip=[f"{label_field}:N", f"{value_field}:Q"],
-        )
-        .properties(height=320, background="#FFFFFF")
-        .configure_view(strokeWidth=0)
+    d = df.copy()
+    total = d[value_field].sum()
+    d["pct"] = d[value_field] / total * 100 if total else 0
+    d["etiqueta_valor"] = d.apply(
+        lambda r: f"{int(r[value_field])} ({r['pct']:.0f}%)" if r["pct"] >= 5 else "", axis=1
     )
+    base = alt.Chart(d).encode(
+        theta=alt.Theta(f"{value_field}:Q", stack=True),
+        order=alt.Order(f"{value_field}:Q", sort="descending"),
+        color=alt.Color(f"{label_field}:N", title="",
+                         scale=alt.Scale(range=DONUT_PALETTE),
+                         legend=alt.Legend(labelColor=text_dark, labelFontSize=11, symbolSize=90)),
+        tooltip=[f"{label_field}:N", f"{value_field}:Q"],
+    )
+    arc = base.mark_arc(innerRadius=70, outerRadius=140, stroke="#FFFFFF", strokeWidth=2)
+    text = base.mark_text(radius=108, size=12, fontWeight="bold").encode(
+        text="etiqueta_valor:N",
+        color=alt.value("#FFFFFF"),
+    )
+    chart = (arc + text).properties(height=320, background="#FFFFFF").configure_view(strokeWidth=0)
     return chart
 
 
