@@ -28,8 +28,8 @@ st.set_page_config(
 # --------------------------------------------------------------------------
 FILE = "Mapeo_CI_Proyectos_a_2025_-_2026.xlsx"
 SHEET = "COOPERACION_INTERNACIONAL_M_0"
-LOGO_1 = "logo_gobernacion.png"   # opcional, si no existe se omite
-LOGO_2 = "logo_sncic.png"         # opcional, si no existe se omite
+LOGO_1 = "logo_gobernacion.png"   # opcional, si no existe se omite (derecha)
+LOGO_2 = "logo_planeacion.png"    # opcional, si no existe se omite (izquierda)
 
 # ============================================================================
 # ESTILOS (identidad visual institucional, sin franja/acentos en rojo)
@@ -372,6 +372,7 @@ def load_data():
     df["fecha_inicial"] = pd.to_datetime(df["fecha_inicial"], errors="coerce")
     df["fecha_final"] = pd.to_datetime(df["fecha_final"], errors="coerce")
     df["anio_inicio"] = df["fecha_inicial"].dt.year
+    df["anio_fin"] = df["fecha_final"].dt.year
 
     df["municipio_list"] = df["municipio_raw"].apply(split_multi_normalized)
     df["sector_list"] = df["sector_raw"].apply(split_multi_plain)
@@ -546,21 +547,26 @@ df = load_data()
 # ============================================================================
 # HEADER
 # ============================================================================
-col_title, col_logo = st.columns([2, 2])
+col_logo_izq, col_title, col_logo_der = st.columns([1, 3, 1], vertical_alignment="center")
+with col_logo_izq:
+    try:
+        st.image(LOGO_2, width=200)
+    except Exception:
+        pass
 with col_title:
     st.markdown(
-        '<div style="padding: 0.6rem 0 0.2rem 0;">'
-        '<div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:1.35rem;color:#0765AD;line-height:1.3;">'
+        '<div style="padding: 0.6rem 0 0.2rem 0; text-align:center;">'
+        '<div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:1.9rem;color:#0765AD;line-height:1.3;">'
         'Ficha de Cooperacion Internacional'
         '</div>'
-        '<div style="font-size:0.85rem;color:#5A6A85;margin-top:4px;">'
+        '<div style="font-size:1rem;color:#5A6A85;margin-top:6px;">'
         'Departamento del Guaviare &mdash; Mapeo de proyectos de cooperacion internacional 2025-2026'
         '</div></div>',
         unsafe_allow_html=True
     )
-with col_logo:
+with col_logo_der:
     try:
-        st.image(LOGO_1, width=280)
+        st.image(LOGO_1, width=200)
     except Exception:
         pass
 
@@ -582,24 +588,34 @@ if nav == nav_options[0]:
     mun_label_to_key.update({municipio_label(k): k for k in mun_keys_presentes})
     mun_opciones = list(mun_label_to_key.keys())
 
-    anios_presentes = sorted(df["anio_inicio"].dropna().unique().tolist())
-    anio_label_to_key = {"Todos los años": None}
-    anio_label_to_key.update({str(int(a)): int(a) for a in anios_presentes})
-    anio_opciones = list(anio_label_to_key.keys())
+    anios_inicio_presentes = sorted(df["anio_inicio"].dropna().unique().tolist())
+    anio_ini_label_to_key = {"Todos los años": None}
+    anio_ini_label_to_key.update({str(int(a)): int(a) for a in anios_inicio_presentes})
+    anio_ini_opciones = list(anio_ini_label_to_key.keys())
 
-    col_filtro1, col_filtro2, _ = st.columns([1, 1, 2])
+    anios_fin_presentes = sorted(df["anio_fin"].dropna().unique().tolist())
+    anio_fin_label_to_key = {"Todos los años": None}
+    anio_fin_label_to_key.update({str(int(a)): int(a) for a in anios_fin_presentes})
+    anio_fin_opciones = list(anio_fin_label_to_key.keys())
+
+    col_filtro1, col_filtro2, col_filtro3, _ = st.columns([1, 1, 1, 1])
     with col_filtro1:
         mun_sel_label = st.selectbox("Filtrar por municipio", mun_opciones, key="filtro_municipio")
     with col_filtro2:
-        anio_sel_label = st.selectbox("Filtrar por año de inicio", anio_opciones, key="filtro_anio")
+        anio_sel_label = st.selectbox("Filtrar por año de inicio", anio_ini_opciones, key="filtro_anio_inicio")
+    with col_filtro3:
+        anio_fin_sel_label = st.selectbox("Filtrar por año de finalizacion", anio_fin_opciones, key="filtro_anio_fin")
     mun_sel_key = mun_label_to_key[mun_sel_label]
-    anio_sel_key = anio_label_to_key[anio_sel_label]
+    anio_sel_key = anio_ini_label_to_key[anio_sel_label]
+    anio_fin_sel_key = anio_fin_label_to_key[anio_fin_sel_label]
 
     df_view = df
     if mun_sel_key is not None:
         df_view = df_view[df_view["municipio_list"].apply(lambda lst: mun_sel_key in lst)]
     if anio_sel_key is not None:
         df_view = df_view[df_view["anio_inicio"] == anio_sel_key]
+    if anio_fin_sel_key is not None:
+        df_view = df_view[df_view["anio_fin"] == anio_fin_sel_key]
     df_view = df_view.reset_index(drop=True)
 
     total_intervenciones = len(df_view)
@@ -620,6 +636,8 @@ if nav == nav_options[0]:
         filtro_txt.append(f"en {mun_sel_label}")
     if anio_sel_key is not None:
         filtro_txt.append(f"con inicio en {anio_sel_label}")
+    if anio_fin_sel_key is not None:
+        filtro_txt.append(f"con finalizacion en {anio_fin_sel_label}")
     filtro_str = " ".join(filtro_txt) if filtro_txt else "en todo el departamento"
 
     st.caption(
@@ -706,7 +724,9 @@ if nav == nav_options[0]:
     if mun_sel_key is not None:
         file_suffix += f"_{mun_sel_key}"
     if anio_sel_key is not None:
-        file_suffix += f"_{anio_sel_key}"
+        file_suffix += f"_ini{anio_sel_key}"
+    if anio_fin_sel_key is not None:
+        file_suffix += f"_fin{anio_fin_sel_key}"
 
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
@@ -749,8 +769,8 @@ elif nav == nav_options[1]:
         'ejecutoras distintas, donantes o cooperantes distintos, municipios con al menos un '
         'proyecto, y los proyectos que se encuentran vigentes hoy segun sus fechas de inicio y '
         'finalizacion.</p>'
-        '<p><strong>Filtros disponibles:</strong> se puede filtrar por municipio y por año de '
-        'inicio del proyecto. Un mismo proyecto puede abarcar varios municipios, varios sectores '
+        '<p><strong>Filtros disponibles:</strong> se puede filtrar por municipio, por año de '
+        'inicio y por año de finalizacion del proyecto. Un mismo proyecto puede abarcar varios municipios, varios sectores '
         'y varios ODS a la vez; por eso los conteos por municipio, sector, poblacion y ODS pueden '
         'sumar mas que el numero total de proyectos.</p>'
         '<p><strong>Limitaciones a tener en cuenta:</strong> esta version no incluye el valor '
