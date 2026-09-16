@@ -28,8 +28,8 @@ st.set_page_config(
 # --------------------------------------------------------------------------
 FILE = "Mapeo_CI_Proyectos_a_2025_-_2026.xlsx"
 SHEET = "COOPERACION_INTERNACIONAL_M_0"
-LOGO_1 = "logo_gobernacion.png"   # opcional, si no existe se omite (derecha)
-LOGO_2 = "logo_planeacion.png"    # opcional, si no existe se omite (izquierda)
+LOGO_1 = "logo_planeacion.png"   # opcional, si no existe se omite (derecha)
+LOGO_2 = "logo_gobernacion.png"    # opcional, si no existe se omite (izquierda)
 
 # ============================================================================
 # ESTILOS (identidad visual institucional, sin franja/acentos en rojo)
