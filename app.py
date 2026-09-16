@@ -28,8 +28,8 @@ st.set_page_config(
 # --------------------------------------------------------------------------
 FILE = "Mapeo_CI_Proyectos_a_2025_-_2026.xlsx"
 SHEET = "COOPERACION_INTERNACIONAL_M_0"
-LOGO_1 = "logo_planeacion.png"   # opcional, si no existe se omite (derecha)
-LOGO_2 = "logo_gobernacion.png"    # opcional, si no existe se omite (izquierda)
+LOGO_1 = "logo_gobernacion.png"   # opcional, si no existe se omite (derecha)
+LOGO_2 = "logo_planeacion.png"    # opcional, si no existe se omite (izquierda)
 
 # ============================================================================
 # ESTILOS (identidad visual institucional, sin franja/acentos en rojo)
@@ -321,6 +321,12 @@ def ods_label(x):
     return ODS_NOMBRES.get(x, f"ODS {x}")
 
 
+MESES_NOMBRES = {
+    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio",
+    7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
+}
+
+
 def format_int(n):
     try:
         n = int(n)
@@ -373,6 +379,7 @@ def load_data():
     df["fecha_final"] = pd.to_datetime(df["fecha_final"], errors="coerce")
     df["anio_inicio"] = df["fecha_inicial"].dt.year
     df["anio_fin"] = df["fecha_final"].dt.year
+    df["mes_fin"] = df["fecha_final"].dt.month
 
     df["municipio_list"] = df["municipio_raw"].apply(split_multi_normalized)
     df["sector_list"] = df["sector_raw"].apply(split_multi_plain)
@@ -598,16 +605,24 @@ if nav == nav_options[0]:
     anio_fin_label_to_key.update({str(int(a)): int(a) for a in anios_fin_presentes})
     anio_fin_opciones = list(anio_fin_label_to_key.keys())
 
-    col_filtro1, col_filtro2, col_filtro3, _ = st.columns([1, 1, 1, 1])
+    meses_fin_presentes = sorted(df["mes_fin"].dropna().unique().tolist())
+    mes_fin_label_to_key = {"Todos los meses": None}
+    mes_fin_label_to_key.update({MESES_NOMBRES[int(m)]: int(m) for m in meses_fin_presentes})
+    mes_fin_opciones = list(mes_fin_label_to_key.keys())
+
+    col_filtro1, col_filtro2, col_filtro3, col_filtro4 = st.columns(4)
     with col_filtro1:
         mun_sel_label = st.selectbox("Filtrar por municipio", mun_opciones, key="filtro_municipio")
     with col_filtro2:
         anio_sel_label = st.selectbox("Filtrar por año de inicio", anio_ini_opciones, key="filtro_anio_inicio")
     with col_filtro3:
         anio_fin_sel_label = st.selectbox("Filtrar por año de finalizacion", anio_fin_opciones, key="filtro_anio_fin")
+    with col_filtro4:
+        mes_fin_sel_label = st.selectbox("Filtrar por mes de finalizacion", mes_fin_opciones, key="filtro_mes_fin")
     mun_sel_key = mun_label_to_key[mun_sel_label]
     anio_sel_key = anio_ini_label_to_key[anio_sel_label]
     anio_fin_sel_key = anio_fin_label_to_key[anio_fin_sel_label]
+    mes_fin_sel_key = mes_fin_label_to_key[mes_fin_sel_label]
 
     df_view = df
     if mun_sel_key is not None:
@@ -616,6 +631,8 @@ if nav == nav_options[0]:
         df_view = df_view[df_view["anio_inicio"] == anio_sel_key]
     if anio_fin_sel_key is not None:
         df_view = df_view[df_view["anio_fin"] == anio_fin_sel_key]
+    if mes_fin_sel_key is not None:
+        df_view = df_view[df_view["mes_fin"] == mes_fin_sel_key]
     df_view = df_view.reset_index(drop=True)
 
     total_intervenciones = len(df_view)
@@ -638,6 +655,8 @@ if nav == nav_options[0]:
         filtro_txt.append(f"con inicio en {anio_sel_label}")
     if anio_fin_sel_key is not None:
         filtro_txt.append(f"con finalizacion en {anio_fin_sel_label}")
+    if mes_fin_sel_key is not None:
+        filtro_txt.append(f"con finalizacion en {mes_fin_sel_label}")
     filtro_str = " ".join(filtro_txt) if filtro_txt else "en todo el departamento"
 
     st.caption(
@@ -727,6 +746,8 @@ if nav == nav_options[0]:
         file_suffix += f"_ini{anio_sel_key}"
     if anio_fin_sel_key is not None:
         file_suffix += f"_fin{anio_fin_sel_key}"
+    if mes_fin_sel_key is not None:
+        file_suffix += f"_mes{mes_fin_sel_key:02d}"
 
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
@@ -770,7 +791,7 @@ elif nav == nav_options[1]:
         'proyecto, y los proyectos que se encuentran vigentes hoy segun sus fechas de inicio y '
         'finalizacion.</p>'
         '<p><strong>Filtros disponibles:</strong> se puede filtrar por municipio, por año de '
-        'inicio y por año de finalizacion del proyecto. Un mismo proyecto puede abarcar varios municipios, varios sectores '
+        'inicio, y por año y mes de finalizacion del proyecto. Un mismo proyecto puede abarcar varios municipios, varios sectores '
         'y varios ODS a la vez; por eso los conteos por municipio, sector, poblacion y ODS pueden '
         'sumar mas que el numero total de proyectos.</p>'
         '<p><strong>Limitaciones a tener en cuenta:</strong> esta version no incluye el valor '
